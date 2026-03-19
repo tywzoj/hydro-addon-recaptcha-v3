@@ -94,7 +94,9 @@ function overrideFormSubmit(siteKey: string, action: string, form: JQuery<HTMLEl
 
 function injectRecaptchaPrivacyPolicy(form: JQuery<HTMLElement>, isDialog: boolean) {
     let elem = $(
-        `<div class="text-center supplementary" style="margin-top: 1rem;">${i18n(CE_String.PrivacyPolicy)}</div>`,
+        `<div class="text-center supplementary" style="margin-top: 1rem; font-size: 0.75rem; line-height: 1.2;">
+            ${i18n(CE_String.PrivacyPolicy)}
+        </div>`,
     );
     if (!isDialog) {
         elem.addClass("inverse");
