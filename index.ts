@@ -3,6 +3,8 @@ import { ForbiddenError, Schema, superagent } from "hydrooj";
 import ip from "ip";
 import isCidr from "is-cidr";
 
+import { CE_String, strings } from "./strings";
+
 declare module "hydrooj" {
     export interface UiContext {
         turnstileSiteKey?: string;
@@ -17,46 +19,6 @@ const WHITELIST = "whitelist-ips";
 const SETTING_SITE_KEY = `${packageJson.name}.${SITE_KEY}`;
 const SETTING_SECRET_KEY = `${packageJson.name}.${SECRET_KEY}`;
 const SETTING_WHITELIST = `${packageJson.name}.${WHITELIST}`;
-
-export const enum CE_String {
-    TITLE = "Google reCAPTCHA v3",
-    SITE_KEY_DESC = "Site Key",
-    SECRET_KEY_DESC = "Secret Key",
-    ValidationFailed = "Validation Failed",
-    SecretKeyNotConfigured = "Secret Key Not Configured",
-    RecaptchaValidating = "Recaptcha Validating",
-    IPWhitelist = "IP Whitelist",
-}
-
-const strings: Record<string, Record<CE_String, string>> = {
-    zh: {
-        [CE_String.TITLE]: "Google reCAPTCHA v3",
-        [CE_String.SITE_KEY_DESC]: "网站密钥",
-        [CE_String.SECRET_KEY_DESC]: "服务端密钥",
-        [CE_String.ValidationFailed]: "人机验证失败",
-        [CE_String.SecretKeyNotConfigured]: "reCAPTCHA 密钥未配置",
-        [CE_String.RecaptchaValidating]: "正在人机验证...",
-        [CE_String.IPWhitelist]: "IP 白名单",
-    },
-    zh_TW: {
-        [CE_String.TITLE]: "Google reCAPTCHA v3",
-        [CE_String.SITE_KEY_DESC]: "網站密鑰",
-        [CE_String.SECRET_KEY_DESC]: "服務端密鑰",
-        [CE_String.ValidationFailed]: "人機驗證失敗",
-        [CE_String.SecretKeyNotConfigured]: "reCAPTCHA 密鑰未配置",
-        [CE_String.RecaptchaValidating]: "正在人機驗證...",
-        [CE_String.IPWhitelist]: "IP 白名單",
-    },
-    en: {
-        [CE_String.TITLE]: "Google reCAPTCHA v3",
-        [CE_String.SITE_KEY_DESC]: "Site Key",
-        [CE_String.SECRET_KEY_DESC]: "Secret Key",
-        [CE_String.ValidationFailed]: "reCAPTCHA validation failed",
-        [CE_String.SecretKeyNotConfigured]: "reCAPTCHA secret key is not configured",
-        [CE_String.RecaptchaValidating]: "Validating reCAPTCHA...",
-        [CE_String.IPWhitelist]: "IP Whitelist",
-    },
-};
 
 export const Config = Schema.object({
     [SITE_KEY]: Schema.string().description(CE_String.SITE_KEY_DESC),

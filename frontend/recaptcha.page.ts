@@ -1,5 +1,7 @@
 import { $, addPage, AutoloadPage, i18n, NamedPage } from "@hydrooj/ui-default";
 
+import { CE_String } from "../strings";
+
 declare global {
     interface Window {
         recaptchaPromise?: Promise<void>;
@@ -21,6 +23,7 @@ addPage(
         void ensureRecaptchaScript(siteKey);
 
         const form = $(".dialog--signin form");
+        injectRecaptchaPrivacyPolicy(form);
         overrideFormSubmit(siteKey, "login", form);
     }),
 );
@@ -33,6 +36,7 @@ addPage(
         void ensureRecaptchaScript(siteKey);
 
         const form = $("form").not(".dialog--signin form");
+        injectRecaptchaPrivacyPolicy(form);
         overrideFormSubmit(siteKey, pagename === "user_login" ? "login" : "register", form);
     }),
 );
@@ -59,7 +63,7 @@ function overrideFormSubmit(siteKey: string, action: string, form: JQuery<HTMLEl
     const submitButton = form.find("input[type=submit]");
     submitButton.on("click", (e) => {
         e.preventDefault();
-        submitButton.prop("disabled", true).addClass("disabled").val(i18n("Recaptcha Validating"));
+        submitButton.prop("disabled", true).addClass("disabled").val(i18n(CE_String.RecaptchaValidating));
         void ensureRecaptchaScript(siteKey)
             .then(() => grecaptcha.execute(siteKey, { action }))
             .then((token) => {
@@ -74,11 +78,23 @@ function overrideFormSubmit(siteKey: string, action: string, form: JQuery<HTMLEl
                 form.trigger("submit"); // Submit the form
             })
             .catch((err) => {
-                alert(i18n("Validation Failed"));
+                alert(i18n(CE_String.ValidationFailed));
                 console.error("reCAPTCHA error:", err);
             })
             .finally(() => {
                 submitButton.prop("disabled", false).removeClass("disabled").val(i18n("Login"));
             });
     });
+}
+
+function injectRecaptchaPrivacyPolicy(form: JQuery<HTMLElement>) {
+    form.append(
+        $(`
+        <div class="row"><div class="column">
+            <div class="text-center supplementary inverse" style="margin-top: 1rem;">
+                ${i18n(CE_String.PrivacyPolicy)}
+            </div>
+        </div></div>
+    `),
+    );
 }
