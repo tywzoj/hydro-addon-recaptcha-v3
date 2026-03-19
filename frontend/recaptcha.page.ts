@@ -14,7 +14,7 @@ declare global {
 // Login dialog
 addPage(
     new AutoloadPage("recaptcha-login-dialog", () => {
-        if (UserContext?._id) return;
+        if (UserContext && UserContext._id) return;
         const siteKey = getRecaptchaSiteKey();
         if (!siteKey) return;
 
@@ -48,7 +48,7 @@ function ensureRecaptchaScript(siteKey: string) {
         const script = document.createElement("script");
         script.src = `https://recaptcha.net/recaptcha/api.js?render=${siteKey}`;
         script.onload = () => grecaptcha.ready(() => resolve());
-        script.onerror = () => reject(new Error("Failed to load Turnstile script"));
+        script.onerror = () => reject(new Error("Failed to load reCAPTCHA script"));
         document.head.appendChild(script);
     });
 
@@ -75,8 +75,10 @@ function overrideFormSubmit(siteKey: string, action: string, form: JQuery<HTMLEl
             })
             .catch((err) => {
                 alert(i18n("Validation Failed"));
-                submitButton.prop("disabled", false).removeClass("disabled").val(i18n("Login"));
                 console.error("reCAPTCHA error:", err);
+            })
+            .finally(() => {
+                submitButton.prop("disabled", false).removeClass("disabled").val(i18n("Login"));
             });
     });
 }
