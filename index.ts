@@ -61,18 +61,7 @@ const strings: Record<string, Record<CE_String, string>> = {
 export const Config = Schema.object({
     [SITE_KEY]: Schema.string().description(CE_String.SITE_KEY_DESC),
     [SECRET_KEY]: Schema.string().description(CE_String.SECRET_KEY_DESC).role("secret"),
-    [WHITELIST]: Schema.array(
-        Schema.transform(Schema.string(), (value, opts) => {
-            // Validate IP or CIDR
-            if (!isCidr(value) && !ip.isV4Format(value) && !ip.isV6Format(value)) {
-                throw new Schema.ValidationError(`Invalid IP or CIDR: ${value}`, opts);
-            }
-
-            return value;
-        }),
-    )
-        .description(CE_String.IPWhitelist)
-        .default([]),
+    [WHITELIST]: Schema.array(Schema.string()).description(CE_String.IPWhitelist).default([]),
 }).description(CE_String.TITLE);
 
 export function apply(ctx: Context) {
@@ -118,6 +107,10 @@ function checkIPInWhitelist(ctx: Context, ipAddress: string): boolean {
     if (!whitelist) return false;
 
     return whitelist.some((cidr) => {
-        return (isCidr(cidr) && ip.cidrSubnet(cidr).contains(ipAddress)) || ip.isEqual(ipAddress, cidr);
+        try {
+            return (isCidr(cidr) && ip.cidrSubnet(cidr).contains(ipAddress)) || ip.isEqual(ipAddress, cidr);
+        } catch {
+            return false;
+        }
     });
 }
