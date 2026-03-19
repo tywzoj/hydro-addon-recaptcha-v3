@@ -11,8 +11,9 @@
     "noFallthroughCasesInSwitch": false,
     "noUnusedLocals": false,
     "esModuleInterop": true,
-    "types": ["node", "hydrooj"],
     "moduleResolution": "node",
+    "isolatedModules": true,
+    "allowSyntheticDefaultImports": true
   },
   "exclude": ["node_modules"]
 }
