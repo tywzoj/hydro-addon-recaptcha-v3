@@ -23,7 +23,7 @@ addPage(
         void ensureRecaptchaScript(siteKey);
 
         const form = $(".dialog--signin form");
-        injectRecaptchaPrivacyPolicy(form, false);
+        injectRecaptchaPrivacyPolicy(form, true);
         overrideFormSubmit(siteKey, "login", form);
     }),
 );
@@ -36,7 +36,7 @@ addPage(
         void ensureRecaptchaScript(siteKey);
 
         const form = $("form").not(".dialog--signin form");
-        injectRecaptchaPrivacyPolicy(form, true);
+        injectRecaptchaPrivacyPolicy(form, false);
         overrideFormSubmit(siteKey, pagename === "user_login" ? "login" : "register", form);
     }),
 );
@@ -92,14 +92,13 @@ function overrideFormSubmit(siteKey: string, action: string, form: JQuery<HTMLEl
     });
 }
 
-function injectRecaptchaPrivacyPolicy(form: JQuery<HTMLElement>, inverse: boolean) {
-    form.append(
-        $(`
-        <div class="row"><div class="column">
-            <div class="text-center supplementary${inverse ? " inverse" : ""}" style="margin-top: 1rem;">
-                ${i18n(CE_String.PrivacyPolicy)}
-            </div>
-        </div></div>
-    `),
+function injectRecaptchaPrivacyPolicy(form: JQuery<HTMLElement>, isDialog: boolean) {
+    let elem = $(
+        `<div class="text-center supplementary" style="margin-top: 1rem;">${i18n(CE_String.PrivacyPolicy)}</div>`,
     );
+    if (!isDialog) {
+        elem.addClass("inverse");
+        elem = $('<div class="row">').append('<div class="column">').append(elem);
+    }
+    form.append(elem);
 }
