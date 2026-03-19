@@ -67,13 +67,18 @@ function overrideFormSubmit(siteKey: string, action: string, form: JQuery<HTMLEl
         void ensureRecaptchaScript(siteKey)
             .then(() => grecaptcha.execute(siteKey, { action }))
             .then((token) => {
-                form.append(
-                    $("<input>", {
-                        type: "hidden",
-                        name: "recaptcha-response",
-                        value: token,
-                    }),
-                );
+                const existingInput = form.find("input[name=recaptcha-response]");
+                if (existingInput.length) {
+                    existingInput.val(token);
+                } else {
+                    form.append(
+                        $("<input>", {
+                            type: "hidden",
+                            name: "recaptcha-response",
+                            value: token,
+                        }),
+                    );
+                }
                 form.off("submit"); // Remove the handler to avoid infinite loop
                 form.trigger("submit"); // Submit the form
             })
