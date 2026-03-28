@@ -23,6 +23,7 @@ addPage(
         void ensureRecaptchaScript(siteKey);
 
         const form = $(".dialog--signin form");
+        if (!form.length) return;
         injectRecaptchaPrivacyPolicy(form, true);
         overrideFormSubmit(siteKey, "login", form);
     }),
@@ -36,6 +37,7 @@ addPage(
         void ensureRecaptchaScript(siteKey);
 
         const form = $("form").not(".dialog--signin form");
+        if (!form.length) return;
         injectRecaptchaPrivacyPolicy(form, false);
         overrideFormSubmit(siteKey, pagename === "user_login" ? "login" : "register", form);
     }),
@@ -89,6 +91,8 @@ function overrideFormSubmit(siteKey: string, action: string, form: JQuery<HTMLEl
 
     // Hack: Override the form's submit method to handle reCAPTCHA before actual submission
     // Avoid using jQuery's submit event to prevent conflicts with webauthn handlers
+    // See https://github.com/hydro-dev/Hydro/blob/04fcd57f517af52d89ce940e35f63f3189144c2a/packages/ui-default/pages/user_verify.page.ts#L99
+    // form[0] is the raw HTMLFormElement, which has a submit method. We are sure it exists because we checked form.length above.
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     const originalSubmit = form[0].submit as () => void;
