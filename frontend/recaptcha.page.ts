@@ -23,6 +23,7 @@ addPage(
         void ensureRecaptchaScript(siteKey);
 
         const form = $(".dialog--signin form");
+        if (!form.length) return;
         injectRecaptchaPrivacyPolicy(form, true);
         overrideFormSubmit(siteKey, "login", form);
     }),
@@ -36,6 +37,7 @@ addPage(
         void ensureRecaptchaScript(siteKey);
 
         const form = $("form").not(".dialog--signin form");
+        if (!form.length) return;
         injectRecaptchaPrivacyPolicy(form, false);
         overrideFormSubmit(siteKey, pagename === "user_login" ? "login" : "register", form);
     }),
@@ -61,35 +63,47 @@ function ensureRecaptchaScript(siteKey: string) {
 
 function overrideFormSubmit(siteKey: string, action: string, form: JQuery<HTMLElement>) {
     const submitButton = form.find("input[type=submit]");
-    submitButton.on("click", (e) => {
-        e.preventDefault();
+
+    const handlerAsync = async () => {
         submitButton.prop("disabled", true).addClass("disabled").val(i18n(CE_String.RecaptchaValidating));
-        void ensureRecaptchaScript(siteKey)
-            .then(() => grecaptcha.execute(siteKey, { action }))
-            .then((token) => {
-                const existingInput = form.find("input[name=recaptcha-response]");
-                if (existingInput.length) {
-                    existingInput.val(token);
-                } else {
-                    form.append(
-                        $("<input>", {
-                            type: "hidden",
-                            name: "recaptcha-response",
-                            value: token,
-                        }),
-                    );
-                }
-                form.off("submit"); // Remove the handler to avoid infinite loop
-                form.trigger("submit"); // Submit the form
-            })
-            .catch((err) => {
-                alert(i18n(CE_String.ValidationFailed));
-                console.error("reCAPTCHA error:", err);
-            })
-            .finally(() => {
-                submitButton.prop("disabled", false).removeClass("disabled").val(i18n("Login"));
-            });
-    });
+        try {
+            await ensureRecaptchaScript(siteKey);
+            const token = await grecaptcha.execute(siteKey, { action });
+            const existingInput = form.find("input[name=recaptcha-response]");
+            if (existingInput.length) {
+                existingInput.val(token);
+            } else {
+                form.append(
+                    $("<input>", {
+                        type: "hidden",
+                        name: "recaptcha-response",
+                        value: token,
+                    }),
+                );
+            }
+        } catch (err) {
+            alert(i18n(CE_String.ValidationFailed));
+            console.error("reCAPTCHA error:", err);
+        } finally {
+            submitButton.prop("disabled", false).removeClass("disabled").val(i18n("Login"));
+        }
+    };
+
+    // Hack: Override the form's submit method to handle reCAPTCHA before actual submission
+    // Avoid using jQuery's submit event to prevent conflicts with webauthn handlers
+    // See https://github.com/hydro-dev/Hydro/blob/04fcd57f517af52d89ce940e35f63f3189144c2a/packages/ui-default/pages/user_verify.page.ts#L99
+    // form[0] is the raw HTMLFormElement, which has a submit method. We are sure it exists because we checked form.length above.
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    const originalSubmit = form[0].submit as () => void;
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    form[0].submit = function (...args: any[]) {
+        void handlerAsync().then(() => {
+            // After handling reCAPTCHA, submit the form
+            originalSubmit?.apply(this, args);
+        });
+    };
 }
 
 function injectRecaptchaPrivacyPolicy(form: JQuery<HTMLElement>, isDialog: boolean) {
