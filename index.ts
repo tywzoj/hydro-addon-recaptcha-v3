@@ -7,23 +7,28 @@ import { CE_String, strings } from "./strings";
 
 declare module "hydrooj" {
     export interface UiContext {
-        turnstileSiteKey?: string;
+        recaptchaSiteKey?: string;
     }
 }
+
+type IHandlerFunction = (handler: Handler) => void | Promise<void>;
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const packageJson = require("./package.json") as { name: string };
 const SITE_KEY = "site-key";
 const SECRET_KEY = "secret-key";
-const WHITELIST = "whitelist-ips";
+const WHITELIST_IP = "whitelist-ips";
+const WHITELIST_USER = "whitelist-users";
 const SETTING_SITE_KEY = `${packageJson.name}.${SITE_KEY}`;
 const SETTING_SECRET_KEY = `${packageJson.name}.${SECRET_KEY}`;
-const SETTING_WHITELIST = `${packageJson.name}.${WHITELIST}`;
+const SETTING_WHITELIST_IP = `${packageJson.name}.${WHITELIST_IP}`;
+const SETTING_WHITELIST_USER = `${packageJson.name}.${WHITELIST_USER}`;
 
 export const Config = Schema.object({
     [SITE_KEY]: Schema.string().description(CE_String.SITE_KEY_DESC),
     [SECRET_KEY]: Schema.string().description(CE_String.SECRET_KEY_DESC).role("secret"),
-    [WHITELIST]: Schema.array(Schema.string()).description(CE_String.IPWhitelist).default([]),
+    [WHITELIST_IP]: Schema.array(Schema.string()).description(CE_String.IPWhitelist).default([]),
+    [WHITELIST_USER]: Schema.array(Schema.string()).description(CE_String.UserWhitelist).default([]),
 }).description(CE_String.TITLE);
 
 export function apply(ctx: Context) {
@@ -31,7 +36,7 @@ export function apply(ctx: Context) {
         ctx.i18n.load(lang, strMap);
     }
 
-    const uiCtxHandler = (handler: Handler) => {
+    const uiCtxHandler: IHandlerFunction = (handler) => {
         if (!ctx.setting.get(SETTING_SITE_KEY)) return; // If site key is not configured, skip loading reCAPTCHA
         if (handler.user && handler.user._id !== 0) return; // If user is logged in, skip loading reCAPTCHA
         if (checkIPInWhitelist(ctx, handler.request.ip)) return; // If IP is in whitelist, skip loading reCAPTCHA
@@ -39,7 +44,7 @@ export function apply(ctx: Context) {
         handler.UiContext.recaptchaSiteKey = ctx.setting.get(SETTING_SITE_KEY) as string | undefined;
     };
 
-    const postHandler = async (handler: Handler) => {
+    const postHandler: IHandlerFunction = async (handler) => {
         if (!ctx.setting.get(SETTING_SITE_KEY)) return; // If site key is not configured, skip verification
         if (checkIPInWhitelist(ctx, handler.request.ip)) return; // If IP is in whitelist, skip verification
 
@@ -60,12 +65,12 @@ export function apply(ctx: Context) {
     };
 
     ctx.on("handler/before", uiCtxHandler);
-    ctx.on("handler/before/UserLogin#post", postHandler);
+    ctx.on("handler/before/UserLogin#post", withUserWhitelistChecker(ctx, postHandler));
     ctx.on("handler/before/UserRegister#post", postHandler);
 }
 
 function checkIPInWhitelist(ctx: Context, ipAddress: string): boolean {
-    const whitelist = ctx.setting.get(SETTING_WHITELIST) as string[] | undefined;
+    const whitelist = ctx.setting.get(SETTING_WHITELIST_IP) as string[] | undefined;
     if (!whitelist) return false;
 
     return whitelist.some((cidr) => {
@@ -75,4 +80,20 @@ function checkIPInWhitelist(ctx: Context, ipAddress: string): boolean {
             return false;
         }
     });
+}
+
+function withUserWhitelistChecker(ctx: Context, handlerFn: IHandlerFunction): IHandlerFunction {
+    const checker = (uname: string | undefined) => {
+        if (!uname) return false;
+
+        const whitelist = ctx.setting.get(SETTING_WHITELIST_USER) as string[] | undefined;
+        if (!whitelist) return false;
+
+        return whitelist.includes(uname);
+    };
+
+    return (handler) => {
+        if (checker(handler.args["uname"] as string | undefined)) return;
+        return handlerFn(handler);
+    };
 }

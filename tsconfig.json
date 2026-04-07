@@ -2,7 +2,6 @@
   "compilerOptions": {
     "module": "commonjs",
     "target": "ES2021",
-    "baseUrl": "./",
     "skipLibCheck": true,
     "strictNullChecks": true,
     "noImplicitAny": false,
@@ -11,7 +10,6 @@
     "noFallthroughCasesInSwitch": false,
     "noUnusedLocals": false,
     "esModuleInterop": true,
-    "moduleResolution": "node",
     "isolatedModules": true,
     "allowSyntheticDefaultImports": true
   },
