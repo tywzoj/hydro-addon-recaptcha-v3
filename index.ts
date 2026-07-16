@@ -79,6 +79,10 @@ function createPostHandler(ctx: Context, scenario: string): IHandlerFunction {
         } catch (err) {
             if (ctx.setting.get(SETTING_BYPASS_WHEN_NETWORK_ERROR)) {
                 ctx.logger.warn("reCAPTCHA network error, bypassing verification", err);
+                await OplogModel.log(handler, "user.recaptcha.bypassed", {
+                    scenario,
+                    reason: "reCAPTCHA network error, bypassing verification",
+                });
                 return;
             }
 
