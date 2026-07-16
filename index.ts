@@ -151,12 +151,16 @@ function checkIPInWhitelist(handler: Handler) {
     const ipAddress = handler.request.ip;
 
     for (const cidr of whitelist) {
-        if (isCidr(cidr) && ip.cidrSubnet(cidr).contains(ipAddress)) {
-            return true; // If IP is in whitelist, bypass verification
-        }
+        try {
+            if (isCidr(cidr) && ip.cidrSubnet(cidr).contains(ipAddress)) {
+                return true; // If IP is in whitelist, bypass verification
+            }
 
-        if (ip.isEqual(ipAddress, cidr)) {
-            return true; // If IP is in whitelist, bypass verification
+            if (ip.isEqual(ipAddress, cidr)) {
+                return true; // If IP is in whitelist, bypass verification
+            }
+        } catch (err) {
+            handler.ctx.logger.warn(`Invalid CIDR or IP in whitelist: ${cidr}, request IP: ${ipAddress}`, err);
         }
     }
 
