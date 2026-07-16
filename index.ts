@@ -102,7 +102,10 @@ function createPostHandler(ctx: Context, scenario: string): IHandlerFunction {
                 reason: "reCAPTCHA score too low",
                 score,
             });
-            throw new ForbiddenError(CE_String.ValidationFailed);
+            throw new ForbiddenError(
+                CE_String.ValidationFailed,
+                `reCAPTCHA score too low: ${score}, minimum required: ${minScore}`,
+            );
         }
 
         await OplogModel.log(handler, "user.recaptcha.success", { scenario });
