@@ -91,6 +91,8 @@ function createPostHandler(ctx: Context, scenario: string): IHandlerFunction {
         if (!success) {
             await OplogModel.log(handler, "user.recaptcha.failed", {
                 scenario,
+                success,
+                score,
                 reason: "reCAPTCHA validation failed",
             });
             throw new ForbiddenError(CE_String.ValidationFailed);
@@ -99,8 +101,9 @@ function createPostHandler(ctx: Context, scenario: string): IHandlerFunction {
         if (score < minScore) {
             await OplogModel.log(handler, "user.recaptcha.failed", {
                 scenario,
-                reason: "reCAPTCHA score too low",
+                success,
                 score,
+                reason: "reCAPTCHA score too low",
             });
             throw new ForbiddenError(
                 CE_String.ValidationFailed,
@@ -108,7 +111,7 @@ function createPostHandler(ctx: Context, scenario: string): IHandlerFunction {
             );
         }
 
-        await OplogModel.log(handler, "user.recaptcha.success", { scenario });
+        await OplogModel.log(handler, "user.recaptcha.success", { scenario, score });
     };
 }
 
