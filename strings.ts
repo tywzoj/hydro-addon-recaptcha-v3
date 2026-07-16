@@ -8,6 +8,8 @@ export const enum CE_String {
     IPWhitelist = "IP Whitelist",
     UserWhitelist = "User Whitelist",
     PrivacyPolicy = 'This site is protected by reCAPTCHA and the Google <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer noopener">Privacy Policy</a> and <a href="https://policies.google.com/terms" target="_blank" rel="noreferrer noopener">Terms of Service</a> apply.',
+    BypassWhenNetworkError = "Bypass reCAPTCHA verification when network error occurs",
+    MinScore = "Minimum score for reCAPTCHA validation",
 }
 
 export const strings: Record<string, Record<CE_String, string>> = {
@@ -22,6 +24,8 @@ export const strings: Record<string, Record<CE_String, string>> = {
         [CE_String.UserWhitelist]: "用户白名单",
         [CE_String.PrivacyPolicy]:
             '本站受 reCAPTCHA 保护，适用 Google 的<a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer noopener">隐私政策</a>和<a href="https://policies.google.com/terms" target="_blank" rel="noreferrer noopener">服务条款</a>',
+        [CE_String.BypassWhenNetworkError]: "当网络错误发生时绕过 reCAPTCHA 验证",
+        [CE_String.MinScore]: "reCAPTCHA 验证的最低分数",
     },
     zh_TW: {
         [CE_String.TITLE]: "Google reCAPTCHA v3",
@@ -34,6 +38,8 @@ export const strings: Record<string, Record<CE_String, string>> = {
         [CE_String.UserWhitelist]: "用戶白名單",
         [CE_String.PrivacyPolicy]:
             '本站受 reCAPTCHA 保護，適用 Google 的<a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer noopener">隱私政策</a>和<a href="https://policies.google.com/terms" target="_blank" rel="noreferrer noopener">服務條款</a>',
+        [CE_String.BypassWhenNetworkError]: "當網路錯誤發生時繞過 reCAPTCHA 驗證",
+        [CE_String.MinScore]: "reCAPTCHA 驗證的最低分數",
     },
     en: {
         [CE_String.TITLE]: "Google reCAPTCHA v3",
@@ -46,5 +52,7 @@ export const strings: Record<string, Record<CE_String, string>> = {
         [CE_String.UserWhitelist]: "User Whitelist",
         [CE_String.PrivacyPolicy]:
             'This site is protected by reCAPTCHA and the Google <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer noopener">Privacy Policy</a> and <a href="https://policies.google.com/terms" target="_blank" rel="noreferrer noopener">Terms of Service</a> apply.',
+        [CE_String.BypassWhenNetworkError]: "Bypass reCAPTCHA verification when network error occurs",
+        [CE_String.MinScore]: "Minimum score for reCAPTCHA validation",
     },
 };
