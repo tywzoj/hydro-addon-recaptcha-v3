@@ -81,7 +81,8 @@ function createPostHandler(ctx: Context, scenario: string): IHandlerFunction {
                 .post("https://recaptcha.net/recaptcha/api/siteverify")
                 .field("secret", secretKey)
                 .field("response", token || "")
-                .field("remoteip", handler.request.ip);
+                .field("remoteip", handler.request.ip)
+                .timeout(10000);
         } catch (err) {
             if (ctx.setting.get(SETTING_BYPASS_WHEN_NETWORK_ERROR)) {
                 ctx.logger.warn("reCAPTCHA network error, bypassing verification", err);
@@ -152,12 +153,14 @@ function checkIPInWhitelist(handler: Handler) {
 
     for (const cidr of whitelist) {
         try {
-            if (isCidr(cidr) && ip.cidrSubnet(cidr).contains(ipAddress)) {
-                return true; // If IP is in whitelist, bypass verification
-            }
-
-            if (ip.isEqual(ipAddress, cidr)) {
-                return true; // If IP is in whitelist, bypass verification
+            if (isCidr(cidr)) {
+                if (ip.cidrSubnet(cidr).contains(ipAddress)) {
+                    return true; // If IP is in whitelist, bypass verification
+                }
+            } else if (ip.isV4Format(cidr) || ip.isV6Format(cidr)) {
+                if (ip.isEqual(cidr, ipAddress)) {
+                    return true; // If IP is in whitelist, bypass verification
+                }
             }
         } catch (err) {
             handler.ctx.logger.warn(`Invalid CIDR or IP in whitelist: ${cidr}, request IP: ${ipAddress}`, err);
