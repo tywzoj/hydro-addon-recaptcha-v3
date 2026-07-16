@@ -15,12 +15,14 @@ type IHandlerFunction = (handler: Handler) => void | Promise<void>;
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const packageJson = require("./package.json") as { name: string };
+const ENABLED = "enabled";
 const SITE_KEY = "site-key";
 const SECRET_KEY = "secret-key";
 const WHITELIST_IP = "whitelist-ips";
 const WHITELIST_USER = "whitelist-users";
 const BYPASS_WHEN_NETWORK_ERROR = "bypass-when-network-error";
 const MIN_SCORE = "min-score";
+const SETTING_ENABLED = `${packageJson.name}.${ENABLED}`;
 const SETTING_SITE_KEY = `${packageJson.name}.${SITE_KEY}`;
 const SETTING_SECRET_KEY = `${packageJson.name}.${SECRET_KEY}`;
 const SETTING_WHITELIST_IP = `${packageJson.name}.${WHITELIST_IP}`;
@@ -29,8 +31,9 @@ const SETTING_BYPASS_WHEN_NETWORK_ERROR = `${packageJson.name}.${BYPASS_WHEN_NET
 const SETTING_MIN_SCORE = `${packageJson.name}.${MIN_SCORE}`;
 
 export const Config = Schema.object({
+    [ENABLED]: Schema.boolean().default(false),
     [SITE_KEY]: Schema.string().description(CE_String.SITE_KEY_DESC),
-    [SECRET_KEY]: Schema.string().description(CE_String.SECRET_KEY_DESC),
+    [SECRET_KEY]: Schema.string().description(CE_String.SECRET_KEY_DESC).role("secret"),
     [WHITELIST_IP]: Schema.array(Schema.string()).description(CE_String.IPWhitelist).default([]),
     [WHITELIST_USER]: Schema.array(Schema.string()).description(CE_String.UserWhitelist).default([]),
     [BYPASS_WHEN_NETWORK_ERROR]: Schema.boolean().description(CE_String.BypassWhenNetworkError).default(false),
@@ -64,8 +67,11 @@ export function apply(ctx: Context) {
 
 function createPostHandler(ctx: Context, scenario: string): IHandlerFunction {
     return async (handler) => {
-        const secretKey = ctx.setting.get(SETTING_SECRET_KEY) as string;
-        const minScore = (ctx.setting.get(SETTING_MIN_SCORE) as number) || 0.0;
+        const secretKey = ctx.setting.get(SETTING_SECRET_KEY) as string | undefined;
+        if (!secretKey) {
+            throw new SystemError(CE_String.SecretKeyNotConfigured);
+        }
+        const minScore = (ctx.setting.get(SETTING_MIN_SCORE) ?? 0.0) as number;
         const token = handler.args["recaptcha-response"] as string | undefined;
 
         let response: superagent.Response;
@@ -92,7 +98,7 @@ function createPostHandler(ctx: Context, scenario: string): IHandlerFunction {
 
         const { success, score } = response.body as { success: boolean; score: number };
 
-        if (!success) {
+        if (!success || typeof score !== "number") {
             await OplogModel.log(handler, "user.recaptcha.failed", {
                 scenario,
                 success,
@@ -133,8 +139,8 @@ function withCheckers(handlerFn: IHandlerFunction, checkers: ((handler: Handler)
 }
 
 function checkNotEnabled(handler: Handler) {
+    if (!handler.ctx.setting.get(SETTING_ENABLED)) return true; // If addon is not enabled, skip verification
     if (!handler.ctx.setting.get(SETTING_SITE_KEY)) return true; // If site key is not configured, skip verification
-    if (!handler.ctx.setting.get(SETTING_SECRET_KEY)) return true; // If secret key is not configured, skip verification
 
     return false;
 }
