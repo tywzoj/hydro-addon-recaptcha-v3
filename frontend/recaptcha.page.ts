@@ -89,7 +89,6 @@ function overrideFormOnSubmit(siteKey: string, action: string, form: JQuery<HTML
         e.preventDefault();
         void handlerAsync().then(() => {
             // After handling reCAPTCHA, submit the form
-            form.off("submit"); // Remove the handler to avoid infinite loop
             HTMLFormElement.prototype.submit.call(form[0] as HTMLFormElement);
         });
     });
@@ -99,7 +98,7 @@ function createRecaptchaHandler(siteKey: string, action: string, form: JQuery<HT
     const submitButton = form.find("input[type=submit]");
 
     return async () => {
-        const originalText = submitButton.val() as string;
+        const originalText = (submitButton.val() ?? "") as string;
         submitButton.prop("disabled", true).addClass("disabled").val(i18n(CE_String.RecaptchaValidating));
         try {
             await ensureRecaptchaScript(siteKey);
