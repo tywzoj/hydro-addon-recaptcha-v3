@@ -29,15 +29,8 @@ addPage(
     }),
 );
 
-// <page name>: <recaptcha action>
-const actionMap: Record<string, string> = {
-    user_login: "login",
-    user_register: "register",
-    user_lostpass: "password_reset",
-};
-
 addPage(
-    new NamedPage(Object.keys(actionMap), (pagename) => {
+    new NamedPage(["user_login", "user_register", "user_lostpass"], (pagename) => {
         const siteKey = getRecaptchaSiteKey();
         if (!siteKey) return;
 
@@ -46,7 +39,11 @@ addPage(
         const form = $("form").not(".dialog--signin form");
         if (!form.length) return;
         injectRecaptchaPrivacyPolicy(form, false);
-        overrideFormSubmit(siteKey, actionMap[pagename] || "unknown", form);
+        if (pagename === "user_lostpass") {
+            overrideFormOnSubmit(siteKey, "password_reset", form);
+        } else {
+            overrideFormSubmit(siteKey, pagename === "user_login" ? "login" : "register", form);
+        }
     }),
 );
 
@@ -69,9 +66,39 @@ function ensureRecaptchaScript(siteKey: string) {
 }
 
 function overrideFormSubmit(siteKey: string, action: string, form: JQuery<HTMLElement>) {
+    const handlerAsync = createRecaptchaHandler(siteKey, action, form);
+
+    // Hack: Override the form's submit method to handle reCAPTCHA before actual submission
+    // Avoid using jQuery's submit event to prevent conflicts with webauthn handlers
+    // See https://github.com/hydro-dev/Hydro/blob/04fcd57f517af52d89ce940e35f63f3189144c2a/packages/ui-default/pages/user_verify.page.ts#L99
+    // form[0] is the raw HTMLFormElement, which has a submit method. We are sure it exists because we checked form.length above.
+    const formElem = form[0] as unknown as { submit: (...args: any[]) => void };
+    const originalSubmit = formElem.submit;
+    formElem.submit = function (...args: any[]) {
+        void handlerAsync().then(() => {
+            // After handling reCAPTCHA, submit the form
+            originalSubmit?.apply(this, args);
+        });
+    };
+}
+
+function overrideFormOnSubmit(siteKey: string, action: string, form: JQuery<HTMLElement>) {
+    const handlerAsync = createRecaptchaHandler(siteKey, action, form);
+
+    form.on("submit.recaptcha", (e) => {
+        e.preventDefault();
+        void handlerAsync().then(() => {
+            // After handling reCAPTCHA, submit the form
+            form.off("submit.recaptcha"); // Remove the handler to avoid infinite loop
+            form.trigger("submit");
+        });
+    });
+}
+
+function createRecaptchaHandler(siteKey: string, action: string, form: JQuery<HTMLElement>) {
     const submitButton = form.find("input[type=submit]");
 
-    const handlerAsync = async () => {
+    return async () => {
         const originalText = submitButton.val() as string;
         submitButton.prop("disabled", true).addClass("disabled").val(i18n(CE_String.RecaptchaValidating));
         try {
@@ -95,19 +122,6 @@ function overrideFormSubmit(siteKey: string, action: string, form: JQuery<HTMLEl
         } finally {
             submitButton.prop("disabled", false).removeClass("disabled").val(originalText);
         }
-    };
-
-    // Hack: Override the form's submit method to handle reCAPTCHA before actual submission
-    // Avoid using jQuery's submit event to prevent conflicts with webauthn handlers
-    // See https://github.com/hydro-dev/Hydro/blob/04fcd57f517af52d89ce940e35f63f3189144c2a/packages/ui-default/pages/user_verify.page.ts#L99
-    // form[0] is the raw HTMLFormElement, which has a submit method. We are sure it exists because we checked form.length above.
-    const formElem = form[0] as unknown as { submit: (...args: any[]) => void };
-    const originalSubmit = formElem.submit;
-    formElem.submit = function (...args: any[]) {
-        void handlerAsync().then(() => {
-            // After handling reCAPTCHA, submit the form
-            originalSubmit?.apply(this, args);
-        });
     };
 }
 
