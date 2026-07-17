@@ -61,8 +61,8 @@ export function apply(ctx: Context) {
         "handler/before/UserLogin#post",
         withCheckers(createPostHandler(ctx, "login"), [...sharedCheckers, checkUserInWhitelist]),
     );
-
-    ctx.on("handler/before/UserRegister#post", withCheckers(createPostHandler(ctx, "register"), [...sharedCheckers]));
+    ctx.on("handler/before/UserRegister#post", withCheckers(createPostHandler(ctx, "register"), sharedCheckers));
+    ctx.on("handler/before/UserLostPass#post", withCheckers(createPostHandler(ctx, "password_reset"), sharedCheckers));
 }
 
 function createPostHandler(ctx: Context, scenario: string): IHandlerFunction {
