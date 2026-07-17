@@ -39,10 +39,10 @@ addPage(
         const form = $("form").not(".dialog--signin form");
         if (!form.length) return;
         injectRecaptchaPrivacyPolicy(form, false);
-        if (pagename === "user_lostpass") {
-            overrideFormOnSubmit(siteKey, "password_reset", form);
+        if (pagename === "user_login") {
+            overrideFormSubmit(siteKey, "login", form);
         } else {
-            overrideFormSubmit(siteKey, pagename === "user_login" ? "login" : "register", form);
+            overrideFormOnSubmit(siteKey, pagename === "user_lostpass" ? "password_reset" : "register", form);
         }
     }),
 );
