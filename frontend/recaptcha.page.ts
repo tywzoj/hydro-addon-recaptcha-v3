@@ -29,8 +29,15 @@ addPage(
     }),
 );
 
+// <page name>: <recaptcha action>
+const actionMap: Record<string, string> = {
+    user_login: "login",
+    user_register: "register",
+    user_lostpass: "password_reset",
+};
+
 addPage(
-    new NamedPage(["user_login", "user_register"], (pagename) => {
+    new NamedPage(Object.keys(actionMap), (pagename) => {
         const siteKey = getRecaptchaSiteKey();
         if (!siteKey) return;
 
@@ -39,7 +46,7 @@ addPage(
         const form = $("form").not(".dialog--signin form");
         if (!form.length) return;
         injectRecaptchaPrivacyPolicy(form, false);
-        overrideFormSubmit(siteKey, pagename === "user_login" ? "login" : "register", form);
+        overrideFormSubmit(siteKey, actionMap[pagename] || "unknown", form);
     }),
 );
 
@@ -65,6 +72,7 @@ function overrideFormSubmit(siteKey: string, action: string, form: JQuery<HTMLEl
     const submitButton = form.find("input[type=submit]");
 
     const handlerAsync = async () => {
+        const originalText = submitButton.val() as string;
         submitButton.prop("disabled", true).addClass("disabled").val(i18n(CE_String.RecaptchaValidating));
         try {
             await ensureRecaptchaScript(siteKey);
@@ -85,7 +93,7 @@ function overrideFormSubmit(siteKey: string, action: string, form: JQuery<HTMLEl
             alert(i18n(CE_String.ValidationFailed));
             console.error("reCAPTCHA error:", err);
         } finally {
-            submitButton.prop("disabled", false).removeClass("disabled").val(i18n("Login"));
+            submitButton.prop("disabled", false).removeClass("disabled").val(originalText);
         }
     };
 
@@ -93,12 +101,9 @@ function overrideFormSubmit(siteKey: string, action: string, form: JQuery<HTMLEl
     // Avoid using jQuery's submit event to prevent conflicts with webauthn handlers
     // See https://github.com/hydro-dev/Hydro/blob/04fcd57f517af52d89ce940e35f63f3189144c2a/packages/ui-default/pages/user_verify.page.ts#L99
     // form[0] is the raw HTMLFormElement, which has a submit method. We are sure it exists because we checked form.length above.
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    const originalSubmit = form[0].submit as () => void;
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    form[0].submit = function (...args: any[]) {
+    const formElem = form[0] as unknown as { submit: (...args: any[]) => void };
+    const originalSubmit = formElem.submit;
+    formElem.submit = function (...args: any[]) {
         void handlerAsync().then(() => {
             // After handling reCAPTCHA, submit the form
             originalSubmit?.apply(this, args);
